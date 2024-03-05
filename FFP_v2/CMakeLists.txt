@@ -29,10 +29,10 @@ endif()
 #################################################################
 
 set(SOURCES
-    src/FFP_v1.f90
-    src/FFP_v1_Subs.f90
-    src/FFP_v1_Types.f90
+    src/FFP_v2.f90
+    src/FFP_v2_Subs.f90
+    src/FFP_v2_Types.f90
     src/FFP_Helpers.f90
 )
 
-add_library(FFP_v1 SHARED ${SOURCES})
+add_library(FFP_v2 SHARED ${SOURCES})

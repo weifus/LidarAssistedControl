@@ -3,6 +3,10 @@
 !------- FILTERS AND TIMING ----------------------------------------------------------
 0    	! FlagLPF             	- Enable low-pass filter (flag) [0/1]
 1	    ! f_cutoff	   			- Corner frequency (-3dB) of the low-pass filter [rad/s]
+1    	! FlagNotch             - Enable notch filter (flag) [0/1]
+1.5708  ! f_Notch               - Corner frequency of the notch filter [rad/s]
+0.01    ! betaNum_Notch	        - Dampening constant in numerator of Notch filter transfer function
+0.1     ! betaDen_Notch	        - Dampening constant in denominator of Notch filter transfer function
 2.26   	! T_buffer        		- Buffer time for filtered REWS signal [s]
 
 !------- STATIC PITCH CURVE ---------------------

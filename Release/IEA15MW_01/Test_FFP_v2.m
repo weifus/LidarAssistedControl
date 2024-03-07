@@ -42,38 +42,41 @@ R_FBFF              = ReadROSCOtextIntoStruct([SimulationName,'.RO.dbg']);
 
 % Plot 
 figure('Name','Simulation results')
-
-subplot(4,1,1);
+fig_size = [100, 100, 800, 300]; % [left, bottom, width, height]
+set(gcf, 'Position', fig_size);
+% subplot(4,1,1);
 hold on; grid on; box on
 plot(FBFF.Time,       FBFF.Wind1VelX);
 plot(FBFF.Time,     FBFF.VLOS01LI);
 plot(R_FBFF.Time,     R_FBFF.REWS_f);
-% legend('Hub height wind speed','Vlos')
+legend('Hub height wind speed','Vlos','filtered REWS')
 ylabel('[m/s]');
-legend('Wind1VelX','VLOS01LI','REWS_f')
+% legend('Wind1VelX','VLOS01LI','REWS_f')
+% title('FFP v2 (notch filtered)')
+title('FFP v1')
 
-subplot(4,1,2);
-hold on; grid on; box on
-% plot(FB.Time,       FB.BldPitch1);
-plot(FBFF.Time,     FBFF.BldPitch1);
-ylabel({'BldPitch1'; '[deg]'});
-% legend('feedback only','feedback-feedforward')
-
-subplot(4,1,3);
-hold on; grid on; box on
-% plot(FB.Time,       FB.RotSpeed);
-plot(FBFF.Time,     FBFF.RotSpeed);
-ylabel({'RotSpeed';'[rpm]'});
-
-subplot(4,1,4);
-hold on; grid on; box on
-% plot(FB.Time,       FB.TwrBsMyt/1e3);
-plot(FBFF.Time,     FBFF.TwrBsMyt/1e3);
-ylabel({'TwrBsMyt';'[MNm]'});
-
-xlabel('time [s]')
-linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
-xlim([0 30])
+% subplot(4,1,2);
+% hold on; grid on; box on
+% % plot(FB.Time,       FB.BldPitch1);
+% plot(FBFF.Time,     FBFF.BldPitch1);
+% ylabel({'BldPitch1'; '[deg]'});
+% % legend('feedback only','feedback-feedforward')
+% 
+% subplot(4,1,3);
+% hold on; grid on; box on
+% % plot(FB.Time,       FB.RotSpeed);
+% plot(FBFF.Time,     FBFF.RotSpeed);
+% ylabel({'RotSpeed';'[rpm]'});
+% 
+% subplot(4,1,4);
+% hold on; grid on; box on
+% % plot(FB.Time,       FB.TwrBsMyt/1e3);
+% plot(FBFF.Time,     FBFF.TwrBsMyt/1e3);
+% ylabel({'TwrBsMyt';'[MNm]'});
+% 
+% xlabel('time [s]')
+% linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
+% xlim([0 30])
 
 % % display results
 % RatedRotorSpeed = 7.56; % [rpm]

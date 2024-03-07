@@ -132,6 +132,10 @@ CONTAINS
         !------- Filter and timing -----------------------------
         CALL ParseInput(UnControllerParameters,CurLine,'FlagLPF', accINFILE(1),LidarVar%FlagLPF, ErrVar)
 		CALL ParseInput(UnControllerParameters,CurLine,'f_cutoff',accINFILE(1),LidarVar%f_cutoff,ErrVar)
+        CALL ParseInput(UnControllerParameters,CurLine,'FlagNotch', accINFILE(1),LidarVar%FlagLPF, ErrVar)
+		CALL ParseInput(UnControllerParameters,CurLine,'f_Notch',accINFILE(1),LidarVar%f_Notch,ErrVar)
+        CALL ParseInput(UnControllerParameters,CurLine,'betaNum_Notch',accINFILE(1),LidarVar%betaNum_Notch,ErrVar)
+        CALL ParseInput(UnControllerParameters,CurLine,'betaDen_Notch',accINFILE(1),LidarVar%betaDen_Notch,ErrVar)																										  
         CALL ParseInput(UnControllerParameters,CurLine,'T_buffer',accINFILE(1),LidarVar%T_buffer,ErrVar)        
         CALL ReadEmptyLine(UnControllerParameters,CurLine)
               
@@ -161,6 +165,7 @@ CONTAINS
         TYPE(LidarErrorVariables),  INTENT(INOUT)       :: ErrVar
 		TYPE(LidarVariables), INTENT(INOUT)          	:: LidarVar
         INTEGER(4)                                   	:: LPF_inst
+		INTEGER(4)                                   	:: Notch_inst
         INTEGER(4)                                   	:: iBuffer
 		INTEGER(4) 										:: Idx
         REAL(C_FLOAT), INTENT(INOUT) :: avrSWAP(*)   ! The swap array, used to pass data to, and receive data from, the DLL controller.
@@ -177,6 +182,14 @@ CONTAINS
 			LidarVar%REWS_f      	= LPFilter(LidarVar%REWS, LidarVar%DT, LidarVar%f_cutoff, LidarVar%iStatus, .FALSE., LPF_inst)
 		ELSE
 			LidarVar%REWS_f      	= LidarVar%REWS
+        END IF
+        
+        ! Notch filter the REWS
+		IF (LidarVar%FlagNotch == 1) THEN
+			Notch_inst = 1
+			LidarVar%REWS_f      	= NotchFilter(LidarVar%REWS_f, LidarVar%DT, LidarVar%f_Notch, LidarVar%betaNum_Notch, LidarVar%betaDen_Notch, LidarVar%iStatus, .FALSE., Notch_inst)
+		ELSE
+			LidarVar%REWS_f      	= LidarVar%REWS_f
 		END IF
 
         ! first-in-last-out buffer for filtered REWS (in case of Error, last values is repeated)
@@ -259,6 +272,52 @@ CONTAINS
     END FUNCTION LPFilter    
 	! -----------------------------------------------------------------------------------
 	
+      
+    REAL FUNCTION NotchFilter(InputSignal, DT, omega, betaNum, betaDen, iStatus, reset, inst)
+    ! Discrete time Notch Filter 
+    !                               Continuous Time Form: G(s) = (s^2 + 2*omega*betaNum*s + omega^2)/(s^2 + 2*omega*betaDen*s + omega^2)
+    !                               Discrete Time Form:   H(z) = (b2*z^2 +b1*z^2 + b0*z)/((z^2 +a1*z^2 + a0*z))
+
+        REAL(8), INTENT(IN)     :: InputSignal
+        REAL(8), INTENT(IN)     :: DT                       ! time step [s]
+        REAL(8), INTENT(IN)     :: omega                    ! corner frequency [rad/s]
+        REAL(8), INTENT(IN)     :: betaNum                  ! Dampening constant in numerator of filter transfer function
+        REAL(8), INTENT(IN)     :: betaDen                  ! Dampening constant in denominator of filter transfer function
+        INTEGER, INTENT(IN)     :: iStatus                  ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
+        INTEGER, INTENT(INOUT)  :: inst                     ! Instance number. Every instance of this function needs to have an unique instance number to ensure instances don't influence each other.
+        LOGICAL(4), INTENT(IN)  :: reset                    ! Reset the filter to the input signal
+        ! Local
+        REAL(8), DIMENSION(99), SAVE    :: K, b2, b1, b0, a1, a0    ! Constant gain
+        REAL(8), DIMENSION(99), SAVE    :: InputSignalLast1         ! Input signal the last time this filter was called. Supports 99 separate instances.
+        REAL(8), DIMENSION(99), SAVE    :: InputSignalLast2         ! Input signal the next to last time this filter was called. Supports 99 separate instances.
+        REAL(8), DIMENSION(99), SAVE    :: OutputSignalLast1        ! Output signal the last time this filter was called. Supports 99 separate instances.
+        REAL(8), DIMENSION(99), SAVE    :: OutputSignalLast2        ! Output signal the next to last time this filter was called. Supports 99 separate instances.
+
+        ! Initialization
+        IF ((iStatus == 0) .OR. reset) THEN
+            OutputSignalLast1(inst)  = InputSignal
+            OutputSignalLast2(inst)  = InputSignal
+            InputSignalLast1(inst)   = InputSignal
+            InputSignalLast2(inst)   = InputSignal
+            K(inst) = 2.0/DT
+            b2(inst) = (K(inst)**2.0 + 2.0*omega*BetaNum*K(inst) + omega**2.0)/(K(inst)**2.0 + 2.0*omega*BetaDen*K(inst) + omega**2.0)
+            b1(inst) = (2.0*omega**2.0 - 2.0*K(inst)**2.0)  / (K(inst)**2.0 + 2.0*omega*BetaDen*K(inst) + omega**2.0);
+            b0(inst) = (K(inst)**2.0 - 2.0*omega*BetaNum*K(inst) + omega**2.0) / (K(inst)**2.0 + 2.0*omega*BetaDen*K(inst) + omega**2.0)
+            a1(inst) = (2.0*omega**2.0 - 2.0*K(inst)**2.0)  / (K(inst)**2.0 + 2.0*omega*BetaDen*K(inst) + omega**2.0)
+            a0(inst) = (K(inst)**2.0 - 2.0*omega*BetaDen*K(inst) + omega**2.0)/ (K(inst)**2.0 + 2.0*omega*BetaDen*K(inst) + omega**2.0)
+        ENDIF
+        
+        ! Body
+        NotchFilter = b2(inst)*InputSignal + b1(inst)*InputSignalLast1(inst) + b0(inst)*InputSignalLast2(inst) - a1(inst)*OutputSignalLast1(inst) - a0(inst)*OutputSignalLast2(inst)
+
+        ! Save signals for next time step
+        InputSignalLast2(inst)   = InputSignalLast1(inst)
+        InputSignalLast1(inst)   = InputSignal                  ! Save input signal for next time step
+        OutputSignalLast2(inst)  = OutputSignalLast1(inst)      ! Save input signal for next time step
+        OutputSignalLast1(inst)  = NotchFilter
+        inst = inst + 1
+
+    END FUNCTION NotchFilter
     ! -----------------------------------------------------------------------------------
 	! Interpolation interp1d from ROSCO
 	REAL FUNCTION interp1d(xData, yData, xq, ErrVar)    

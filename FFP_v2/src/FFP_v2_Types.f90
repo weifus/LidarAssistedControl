@@ -28,6 +28,10 @@ TYPE, PUBLIC :: LidarVariables
 	! ---------- variables from IN file ----------
     REAL(8)                             :: FlagLPF                     	! Enable low-pass filter (flag) [0/1]
     REAL(8)                             :: f_cutoff              		! Corner frequency (-3dB) of the low-pass filter [rad/s]
+    REAL(8)                             :: FlagNotch                    ! Enable low-pass filter (flag) [0/1]
+    REAL(8)                             :: f_Notch                  	! corner frequency of notch filter [rad/s]
+    REAL(8)                             :: betaNum_Notch                ! Dampening constant in numerator of notch filter transfer function
+    REAL(8)                             :: betaDen_Notch                ! Dampening constant in denominator of notch filter transfer function
     REAL(8)                             :: T_buffer                		! Buffer time for filtered REWS signal [s]
 	INTEGER(4)                          :: n_StaticPitchCurve           ! Number of points in static pitch curve [-]
     REAL(8), DIMENSION(:), ALLOCATABLE  :: StaticPitch                  ! Pitch angle values in static pitch curve [rad]

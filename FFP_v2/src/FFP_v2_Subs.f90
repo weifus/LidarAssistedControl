@@ -79,6 +79,7 @@ CONTAINS
 		print *, 'Developed by sowento GmbH, Germany'
 		print *, '--------------------------------------------------------------------'
 		
+		
 		! Read the DLL Parameters specified in the User Interface
 		CALL ReadLidarParameterFileSub(LidarVar, accINFILE, NINT(avrSWAP(50)), ErrVar)
 		
@@ -132,7 +133,7 @@ CONTAINS
         !------- Filter and timing -----------------------------
         CALL ParseInput(UnControllerParameters,CurLine,'FlagLPF', accINFILE(1),LidarVar%FlagLPF, ErrVar)
 		CALL ParseInput(UnControllerParameters,CurLine,'f_cutoff',accINFILE(1),LidarVar%f_cutoff,ErrVar)
-        CALL ParseInput(UnControllerParameters,CurLine,'FlagNotch', accINFILE(1),LidarVar%FlagLPF, ErrVar)
+        CALL ParseInput(UnControllerParameters,CurLine,'FlagNotch', accINFILE(1),LidarVar%FlagNotch, ErrVar)
 		CALL ParseInput(UnControllerParameters,CurLine,'f_Notch',accINFILE(1),LidarVar%f_Notch,ErrVar)
         CALL ParseInput(UnControllerParameters,CurLine,'betaNum_Notch',accINFILE(1),LidarVar%betaNum_Notch,ErrVar)
         CALL ParseInput(UnControllerParameters,CurLine,'betaDen_Notch',accINFILE(1),LidarVar%betaDen_Notch,ErrVar)																										  
@@ -175,7 +176,7 @@ CONTAINS
         IF (ErrVar%aviFAIL < 0) THEN
             return
         ENDIF			
-        
+		
         ! Low pass filter the REWS
 		IF (LidarVar%FlagLPF == 1) THEN
 			LPF_inst = 1
@@ -183,11 +184,13 @@ CONTAINS
 		ELSE
 			LidarVar%REWS_f      	= LidarVar%REWS
         END IF
-        
+		
         ! Notch filter the REWS
 		IF (LidarVar%FlagNotch == 1) THEN
 			Notch_inst = 1
+			
 			LidarVar%REWS_f      	= NotchFilter(LidarVar%REWS_f, LidarVar%DT, LidarVar%f_Notch, LidarVar%betaNum_Notch, LidarVar%betaDen_Notch, LidarVar%iStatus, .FALSE., Notch_inst)
+		
 		ELSE
 			LidarVar%REWS_f      	= LidarVar%REWS_f
 		END IF
@@ -306,7 +309,7 @@ CONTAINS
             a1(inst) = (2.0*omega**2.0 - 2.0*K(inst)**2.0)  / (K(inst)**2.0 + 2.0*omega*BetaDen*K(inst) + omega**2.0)
             a0(inst) = (K(inst)**2.0 - 2.0*omega*BetaDen*K(inst) + omega**2.0)/ (K(inst)**2.0 + 2.0*omega*BetaDen*K(inst) + omega**2.0)
         ENDIF
-        
+		
         ! Body
         NotchFilter = b2(inst)*InputSignal + b1(inst)*InputSignalLast1(inst) + b0(inst)*InputSignalLast2(inst) - a1(inst)*OutputSignalLast1(inst) - a0(inst)*OutputSignalLast2(inst)
 
